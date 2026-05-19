@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.edutech.dto.LoginRequest;
 import com.edutech.dto.LoginResponse;
@@ -29,6 +30,7 @@ import com.edutech.model.User;
 import com.edutech.service.EmailService;
 // import com.edutech.service.EmailServiceImpl;
 import com.edutech.service.OtpService;
+import com.edutech.service.RecaptchaService;
 import com.edutech.service.UserService;
 import com.edutech.util.JwtUtil;
 
@@ -44,6 +46,9 @@ public class AuthController {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private  RecaptchaService recaptchaService;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -88,6 +93,15 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
+
+        boolean captchaValid = recaptchaService.verify(loginRequest.getCaptchaToken());
+
+        if (!captchaValid) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Captcha verification failed. Please try again."
+            );
+        }
 
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
