@@ -1,0 +1,97 @@
+<div class="chatbot-wrapper">
+
+  <div class="chat-window" *ngIf="isOpen">
+
+    <!-- Header -->
+    <div class="chat-header" [ngClass]="getGradientClass(currentAgent.gradient)">
+      <div class="agent-info">
+        <div class="avatar-wrapper">
+          <div class="avatar">
+            {{ currentAgent.icon }}
+          </div>
+          <span class="status-dot" [ngClass]="getStatusClass(currentAgent.status)"></span>
+        </div>
+
+        <div>
+          <h3>{{ currentAgent.name }}</h3>
+          <p>{{ currentAgent.role }}</p>
+        </div>
+      </div>
+
+      <button class="close-btn" type="button" (click)="closeChat()">×</button>
+    </div>
+
+    <!-- Agent Selector -->
+    <div class="agent-selector">
+      <label>Select AI Agent</label>
+
+      <select [(ngModel)]="selectedAgentId">
+        <option *ngFor="let agent of agents" [value]="agent.id">
+          {{ agent.icon }} {{ agent.name }} - {{ agent.role }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Chat Body -->
+    <div class="chat-body">
+
+      <div
+        class="message-row"
+        *ngFor="let chat of messages"
+        [ngClass]="chat.sender === 'user' ? 'user-row' : 'bot-row'"
+      >
+
+        <div class="message-avatar" *ngIf="chat.sender === 'bot'">
+          {{ currentAgent.icon }}
+        </div>
+
+        <div class="message-content">
+          <span class="sender-name" *ngIf="chat.sender === 'bot'">
+            {{ chat.agentName || currentAgent.name }}
+          </span>
+
+          <div
+            class="message-bubble"
+            [ngClass]="chat.sender === 'user' ? 'user-bubble' : 'bot-bubble'"
+          >
+            {{ chat.text }}
+          </div>
+        </div>
+
+        <div class="message-avatar user-avatar" *ngIf="chat.sender === 'user'">
+          ME
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Input -->
+    <form class="chat-input-area" (ngSubmit)="sendMessage()">
+      <input
+        type="text"
+        name="message"
+        [(ngModel)]="message"
+        placeholder="Message {{ currentAgent.name }}..."
+        autocomplete="off"
+      />
+
+      <button type="submit" [disabled]="!message.trim()">
+        ➤
+      </button>
+    </form>
+
+  </div>
+
+  <!-- Floating Button -->
+  <button
+    type="button"
+    class="floating-chat-btn"
+    [ngClass]="{ 'open': isOpen }"
+    (click)="toggleChat()"
+  >
+    <span *ngIf="!isOpen">💬</span>
+    <span *ngIf="isOpen">×</span>
+  </button>
+
+</div>

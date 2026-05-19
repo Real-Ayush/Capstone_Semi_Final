@@ -5,6 +5,9 @@ import { AuthService } from '../../shared/services/auth.service';
 import { MenuItemService } from '../../shared/services/menu-item.service';
 import { OrderService } from '../../shared/services/order.service';
 import { RestaurantService } from '../../shared/services/restaurant.service';
+import { PaymentService } from '../../shared/services/payment.service';
+// import { PaymentService } from '../../shared/services/paymentService';
+
 
 @Component({
   selector: 'app-order',
@@ -44,7 +47,8 @@ export class OrderComponent implements OnInit {
     private orderService: OrderService,
     private restaurantService: RestaurantService,
     private menuItemService: MenuItemService,
-    public authService: AuthService
+    public authService: AuthService,
+    private paymentService: PaymentService
   ) { }
 
   ngOnInit(): void {
@@ -321,20 +325,9 @@ export class OrderComponent implements OnInit {
     return this.selectedItems.reduce(
       (sum, item) => {
 
-        const qty =
-          item.quantity
-            ? item.quantity
-            : 1;
-
-        const price =
-          item.price
-            ? Number(item.price)
-            : 0;
-
-        return sum + (price * qty);
-
-      },
-      0
+        const price = item.price ? Number(item.price): 0;
+        return sum+price
+      },0
     );
   }
 
@@ -543,6 +536,9 @@ export class OrderComponent implements OnInit {
     );
   }
 
+  get PageArray():number[]{
+    return Array.from({length:this.totalPages},(_,i) => i+1);
+  }
   nextPage(): void {
 
     if (this.currentPage < this.totalPages) {
@@ -565,4 +561,47 @@ export class OrderComponent implements OnInit {
 
     this.currentPage = page;
   }
+
+
+  //PayNow() function for order
+  payNow(): void {
+  this.message = '';
+  this.error = '';
+
+  if (this.orderForm.invalid || this.selectedItems.length === 0) {
+    this.error = 'Please select a restaurant and at least one menu item.';
+    return;
+  }
+
+  const totalPaise = this.getTotal(); 
+
+  this.paymentService.createOrder(totalPaise).subscribe({
+    next: (response: any) => {
+      const options = {
+        key: 'rzp_test_Sr3Wysqx5rbOFB', 
+        amount: response.amount,
+        currency: response.currency || 'INR',
+        name: 'Restaurant System',
+        description: 'Food Order',
+        order_id: response.id,
+        handler: (paymentResponse: any) => {
+          console.log('Payment success:', paymentResponse);
+          // Auto place the order after successful payment
+          this.placeOrder();
+        },
+        modal: {
+          ondismiss: () => {
+            this.error = 'Payment was cancelled.';
+          }
+        }
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+    },
+    error: () => {
+      this.error = 'Could not initiate payment. Please try again.';
+    }
+  });
+}
 }
